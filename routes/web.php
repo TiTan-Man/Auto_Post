@@ -21,4 +21,5 @@ Route::get('/marketing', [MarketingController::class, 'index']);
 Route::post('/generate-content', [MarketingController::class, 'generateContent'])->name('generateContent');
 Route::post('/post-to-facebook', [MarketingController::class, 'postToFacebook'])->name('postToFacebook');
 Route::get('/facebook-insights', [FacebookInsightsController::class, 'showForm'])->name('facebook.insights.form');
-Route::post('/facebook-insights', [FacebookInsightsController::class, 'getInsights'])->name('facebook.insights');
+Route::get('/facebook-insights', [FacebookInsightsController::class, 'showInsights'])->name('insights');
+Route::post('/facebook-insights/strategy', [FacebookInsightsController::class, 'generateStrategy'])->name('insights.strategy');
