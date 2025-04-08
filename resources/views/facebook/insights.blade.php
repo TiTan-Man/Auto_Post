@@ -15,35 +15,16 @@
         <div class="alert alert-danger">{{ $error }}</div>
     @endif
 
-    @if(isset($pageInfo['name']))
-        <h2>Thông tin Page</h2>
-        <ul class="list-group mb-4">
-            <li class="list-group-item"><strong>Tên:</strong> {{ $pageInfo['name'] }}</li>
-            <li class="list-group-item"><strong>Loại:</strong> {{ $pageInfo['category'] ?? 'Không rõ' }}</li>
-            <li class="list-group-item"><strong>Lượt thích:</strong> {{ number_format($pageInfo['fan_count']) }}</li>
-            <li class="list-group-item"><strong>Giới thiệu:</strong> {{ $pageInfo['about'] ?? 'Không có mô tả' }}</li>
-        </ul>
-    @endif
+    @if (!empty($pageInfo))
+    <div class="page-info">
+        <h2>📄 Thông tin Fanpage</h2>
+        <p><strong>Tên:</strong> {{ $pageInfo['name'] ?? 'Không có' }}</p>
+        <p><strong>Mô tả:</strong> {{ $pageInfo['about'] ?? 'Không có' }}</p>
+        <p><strong>Danh mục:</strong> {{ $pageInfo['category'] ?? 'Không có' }}</p>
+        <p><strong>Lượt thích:</strong> {{ number_format($pageInfo['fan_count'] ?? 0) }}</p>
+    </div>
+@endif
 
-    @if(!empty($insights))
-        <h2>Thống kê tương tác Page (Daily)</h2>
-        <table class="table table-bordered mb-4">
-            <thead>
-                <tr>
-                    <th>Chỉ số</th>
-                    <th>Giá trị gần nhất</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($insights as $insight)
-                    <tr>
-                        <td>{{ $insight['title'] }}</td>
-                        <td>{{ $insight['values'][0]['value'] ?? 'N/A' }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
 
     @if(!empty($posts))
         <h2>10 Bài Viết Gần Đây</h2>
@@ -62,7 +43,7 @@
                     <tr>
                         <td>{{ \Carbon\Carbon::parse($post['created_time'])->format('d/m/Y') }}</td>
                         <td>{{ Str::limit($post['message'] ?? '(Không có nội dung)', 60) }}</td>
-                        <td>{{ $post['insights']['data'][0]['values'][0]['value'] ?? '-' }}</td>
+                        <td>{{ $post['impressions'] ?? 0 }}</td>
                         <td>{{ $post['insights']['data'][1]['values'][0]['value'] ?? '-' }}</td>
                         <td>{{ $post['insights']['data'][2]['values'][0]['value'] ?? '-' }}</td>
                     </tr>
@@ -84,7 +65,8 @@
 @section('scripts')
 <script>
     document.getElementById('generateStrategy').addEventListener('click', function() {
-        let pageId = '{{ $pageId ?? "" }}';
+        dd("hehehe");
+    let pageId = '{{ $pageId ?? "" }}';
     fetch("{{ route('insights.strategy') }}", {
         method: "POST",
         headers: {

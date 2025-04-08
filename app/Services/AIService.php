@@ -44,7 +44,32 @@ class AIService
             return 'Đã xảy ra lỗi khi tạo nội dung.';
         }
     }
+    public function generateMarketingStrategy(string $topic): string
+    {
+        $prompt = "Vào vai chuyên gia đề xuất chiến lược makerting , hãy đề xuất cho{$topic}";
 
+        try {
+            $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                ],
+                'json' => [
+                    'model' => 'gpt-3.5-turbo',
+                    'messages' => [
+                        ['role' => 'system', 'content' => 'You are a helpful assistant.'],
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                ]
+            ]);
+
+            $data = json_decode($response->getBody(), true);
+            return $data['choices'][0]['message']['content'] ?? 'Không có nội dung trả về';
+        } catch (\Exception $e) {
+            Log::error('Lỗi khi gọi API OpenAI: ' . $e->getMessage());
+            return 'Đã xảy ra lỗi khi tạo nội dung.';
+        }
+    }
     public function postToFacebook(string $pageId, string $message)
     {
         $url = "https://graph.facebook.com/{$pageId}/feed";

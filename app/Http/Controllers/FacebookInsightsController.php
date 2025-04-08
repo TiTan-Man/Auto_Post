@@ -4,60 +4,92 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-
+use App\Services\AIService;
 class FacebookInsightsController extends Controller
 {
     public function showInsights(Request $request)
     {
         $pageId = $request->input('page_id');
         $accessToken = env('FACEBOOK_ACCESS_TOKEN');
-
+    
         if (!$pageId) {
             return view('facebook.insights')->with('error', 'Vui lòng nhập Page ID để xem dữ liệu.');
         }
-
+    
+        $client = new \GuzzleHttp\Client();
+    
         try {
-            // 1. Lấy thông tin cơ bản về Page
-            $pageInfo = Http::get("https://graph.facebook.com/v22.0/{$pageId}", [
-                'fields' => 'name,fan_count,about,category',
+            $pageInfo = Http::get("https://graph.facebook.com/v18.0/{$pageId}", [
+                'fields' => 'name,about,category,fan_count',
                 'access_token' => $accessToken
             ])->json();
-
-            // 2. Lấy Insights của Page
-            $metrics = [
-                'page_impressions',
-                'page_engaged_users',
-                'page_views_total',
-                'page_post_engagements',
-                'page_consumptions',
-            ];
-            $insightsResponse = Http::get("https://graph.facebook.com/v22.0/{$pageId}/insights", [
-                'metric' => implode(',', $metrics),
+            // Lấy danh sách bài viết kèm lượt cảm xúc và bình luận
+            $response = $client->get("https://graph.facebook.com/v22.0/{$pageId}/posts", [
+                'query' => [
+                    'access_token' => $accessToken,
+                    'fields' => 'id,message,created_time,reactions.summary(true),comments.summary(true)',
+                    'limit' => 10
+                ]
+            ]);
+            $pageInsights = Http::get("https://graph.facebook.com/v18.0/{$pageId}/insights", [
+                'metric' => 'page_views_total',
                 'period' => 'day',
                 'access_token' => $accessToken
+            ])->json();
+        
+            $pageViews = $pageInsights['data'][0]['values'][0]['value'] ?? 0;
+            $postsData = json_decode($response->getBody(), true);
+    
+            foreach ($postsData['data'] as &$post) {
+                $postId = $post['id'];
+            
+                try {
+                    // Lấy chỉ số cảm xúc
+                    $reactionRes = $client->get("https://graph.facebook.com/v18.0/{$postId}/insights", [
+                        'query' => [
+                            'access_token' => $accessToken,
+                            'metric' => 'post_reactions_by_type_total,post_impressions'
+                        ]
+                    ]);
+            
+                    $insightData = json_decode($reactionRes->getBody(), true)['data'] ?? [];
+            
+                    $reactionTypes = [];
+                    $impressions = 0;
+            
+                    foreach ($insightData as $metric) {
+                        if ($metric['name'] === 'post_reactions_by_type_total') {
+                            $reactionTypes = $metric['values'][0]['value'] ?? [];
+                        }
+            
+                        if ($metric['name'] === 'post_impressions') {
+                            $impressions = $metric['values'][0]['value'] ?? 0;
+                        }
+                    }
+            
+                    $post['reaction_types'] = $reactionTypes;
+                    $post['impressions'] = $impressions;
+            
+                } catch (\Exception $e) {
+                    $post['reaction_types'] = ['Lỗi' => 'Không lấy được'];
+                    $post['impressions'] = 0;
+                }
+            }
+            
+            
+            // dd($postsData);
+            return view('facebook.insights', [
+                'posts' => $postsData['data'] ?? [],
+                'pageViews' => $pageViews ?? 0,
+                'pageId' => $pageId,
+                'pageInfo' => $pageInfo ?? [],
             ]);
-
-            $insights = $insightsResponse->json()['data'] ?? [];
-
-            // 3. Lấy danh sách bài viết gần đây với insights
-            $postsResponse = Http::get("https://graph.facebook.com/v22.0/{$pageId}/posts", [
-                'fields' => 'message,created_time,insights.metric(post_impressions,post_engaged_users,post_clicks)',
-                'limit' => 10,
-                'access_token' => $accessToken
-            ]);
-            $posts = $postsResponse->json()['data'] ?? [];
+            
         } catch (\Exception $e) {
-            return view('facebook.insights')->with('error', 'Có lỗi xảy ra khi lấy dữ liệu: ' . $e->getMessage());
+            return view('facebook.insights')->with('error', 'Không thể lấy dữ liệu từ Facebook.');
         }
-
-        return view('facebook.insights', [
-            'pageInfo' => $pageInfo,
-            'insights' => $insights,
-            'posts' => $posts,
-            'pageId' => $pageId,
-            'pageId'    => $pageId ?? ''
-        ]);
     }
+
 
     // Hàm tích hợp OpenAI để tạo đề xuất chiến lược marketing
     public function generateStrategy(Request $request)
@@ -70,23 +102,14 @@ class FacebookInsightsController extends Controller
     }
     
     // Giả sử chúng ta tổng hợp dữ liệu và tạo prompt cho OpenAI
-    $prompt = "Trang Facebook có ID {$pageId} có lượng tương tác tốt. Dựa trên số liệu này, đề xuất chiến lược marketing để tăng tương tác.";
+    $prompt = "Trang Facebook có ID {$pageId} có lượng tương tác khá kém. ";
     
-    $openAiApiKey = env('OPENAI_API_KEY');
-    $openAiResponse = Http::withHeaders([
-        'Content-Type' => 'application/json',
-        'Authorization' => 'Bearer ' . $openAiApiKey,
-    ])->post('https://api.openai.com/v1/chat/completions', [
-        'model' => 'gpt-3.5-turbo',
-        'messages' => [
-            ['role' => 'system', 'content' => 'Bạn là chuyên gia marketing.'],
-            ['role' => 'user', 'content' => $prompt],
-        ],
-        'max_tokens' => 200,
-    ]);
-    
-    $openAiData = $openAiResponse->json();
-    $strategy = $openAiData['choices'][0]['message']['content'] ?? 'Không có đề xuất nào.';
+    $aiService = new \App\Services\AIService();
+    try {
+        $strategy = $aiService->generateMarketingStrategy($prompt);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Lỗi khi tạo đề xuất chiến lược: ' . $e->getMessage()], 500);
+    }
     
     return response()->json(['strategy' => $strategy]);
 }
