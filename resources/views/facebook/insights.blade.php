@@ -73,7 +73,7 @@
 
     @if(isset($pageInfo['name']))
     <div class="mb-4">
-        <button id="generateStrategy" class="btn btn-success">Đề xuất chiến lược marketing</button>
+        <button type="submit" id="generateStrategy" class="btn btn-success">Đề xuất chiến lược marketing</button>
     </div>
     <div id="strategyResult" class="alert alert-info" style="display:none;"></div>
     @endif
@@ -84,30 +84,30 @@
 @section('scripts')
 <script>
     document.getElementById('generateStrategy').addEventListener('click', function() {
-        let pageId = '{{ $pageId }}';
-        fetch("{{ route('insights.strategy') }}", {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-TOKEN": "{{ csrf_token() }}"
-    },
-    body: JSON.stringify({ page_id: "{{ $pageId }}" })
-})
-
-        .then(res => res.json())
-        .then(data => {
-            if(data.strategy) {
-                document.getElementById('strategyResult').style.display = 'block';
-                document.getElementById('strategyResult').innerText = data.strategy;
-            } else if(data.error) {
-                document.getElementById('strategyResult').style.display = 'block';
-                document.getElementById('strategyResult').innerText = data.error;
-            }
-        })
-        .catch(err => {
+        let pageId = '{{ $pageId ?? "" }}';
+    fetch("{{ route('insights.strategy') }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": "{{ csrf_token() }}"
+        },
+        body: JSON.stringify({ page_id: pageId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.strategy) {
             document.getElementById('strategyResult').style.display = 'block';
-            document.getElementById('strategyResult').innerText = 'Có lỗi xảy ra: ' + err.message;
-        });
+            document.getElementById('strategyResult').innerText = data.strategy;
+        } else if(data.error) {
+            document.getElementById('strategyResult').style.display = 'block';
+            document.getElementById('strategyResult').innerText = data.error;
+        }
+    })
+    .catch(err => {
+        document.getElementById('strategyResult').style.display = 'block';
+        document.getElementById('strategyResult').innerText = 'Có lỗi xảy ra: ' + err.message;
     });
+});
+
 </script>
 @endsection
