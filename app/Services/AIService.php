@@ -44,30 +44,41 @@ class AIService
             return 'Đã xảy ra lỗi khi tạo nội dung.';
         }
     }
-    public function generateMarketingStrategy(string $topic): string
+    public function generateStrategyFromInsights(array $insights, string $topic = ''): string
     {
-        $prompt = "Vào vai chuyên gia đề xuất chiến lược makerting , hãy đề xuất cho{$topic}";
+        // Chuyển dữ liệu insights sang chuỗi JSON được định dạng đẹp
+        $insightsJson = json_encode($insights, JSON_PRETTY_PRINT);
+
+        // Tạo prompt dựa trên dữ liệu insights
+        $prompt = "Dưới đây là dữ liệu Facebook Insights về các bài viết của trang:\n\n{$insightsJson}\n\n";
+        if ($topic) {
+            $prompt .= "Dựa trên dữ liệu trên, hãy tạo ra một chiến lược marketing toàn diện và xuất sắc cho việc tiếp thị sản phẩm/dịch vụ thuộc lĩnh vực \"{$topic}\". Chiến lược cần bao gồm phân tích thị trường, đối tượng mục tiêu, kênh truyền thông, nội dung quảng cáo và cách đo lường hiệu quả.";
+        } else {
+            $prompt .= "Dựa trên dữ liệu trên, hãy tạo ra một chiến lược marketing toàn diện và xuất sắc cho trang này. Chiến lược cần bao gồm phân tích thị trường, đối tượng mục tiêu, kênh truyền thông, nội dung quảng cáo và cách đo lường hiệu quả.";
+        }
 
         try {
             $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
                 'headers' => [
-                    'Content-Type' => 'application/json',
+                    'Content-Type'  => 'application/json',
                     'Authorization' => 'Bearer ' . $this->apiKey,
                 ],
                 'json' => [
-                    'model' => 'gpt-3.5-turbo',
+                    'model'    => 'gpt-3.5-turbo',
                     'messages' => [
-                        ['role' => 'system', 'content' => 'You are a helpful assistant.'],
+                        ['role' => 'system', 'content' => 'You are a seasoned marketing strategist.'],
                         ['role' => 'user', 'content' => $prompt],
                     ],
+                    'max_tokens' => 1000,
                 ]
             ]);
 
             $data = json_decode($response->getBody(), true);
-            return $data['choices'][0]['message']['content'] ?? 'Không có nội dung trả về';
+            return $data['choices'][0]['message']['content'] ?? 'Không có chiến lược trả về';
+
         } catch (\Exception $e) {
-            Log::error('Lỗi khi gọi API OpenAI: ' . $e->getMessage());
-            return 'Đã xảy ra lỗi khi tạo nội dung.';
+            // Log::error('Lỗi khi gọi API OpenAI (generateStrategyFromInsights): ' . $e->getMessage());
+            return 'Đã xảy ra lỗi khi tạo chiến lược marketing từ insights.'. $e->getMessage();
         }
     }
     public function postToFacebook(string $pageId, string $message)

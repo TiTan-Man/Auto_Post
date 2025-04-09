@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\AIService;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Http;
 class MarketingController extends Controller
 {
     protected $aiService;
@@ -43,5 +43,32 @@ class MarketingController extends Controller
         $result = $this->aiService->postToFacebook($pageId, $content);
 
         return view('marketing.index', compact('content', 'result'));
+    }
+    public function getWeather(Request $request)
+    {
+        $location = $request->input('location');
+        $date = $request->input('date'); // Chưa dùng vì API miễn phí không hỗ trợ dự báo theo ngày cụ thể
+
+        $apiKey = env('OPENWEATHER_API_KEY');
+
+        $response = Http::get("http://api.openweathermap.org/data/2.5/weather", [
+            'q' => $location,
+            'appid' => $apiKey,
+            'units' => 'metric',
+            'lang' => 'vi'
+        ]);
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Không lấy được dữ liệu thời tiết'], 500);
+        }
+
+        $data = $response->json();
+
+        return response()->json([
+            'location'    => $location,
+            'date'        => now()->toDateString(),
+            'temperature' => $data['main']['temp'] . '°C',
+            'condition'   => $data['weather'][0]['description']
+        ]);
     }
 }
