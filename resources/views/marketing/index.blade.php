@@ -10,22 +10,28 @@
         <h1>Tạo và Đăng Content Marketing</h1>
 
         @if(isset($content))
-            <div class="alert alert-info">
-                <h3>Nội dung tạo ra:</h3>
-                <p>{{ $content }}</p>
-            </div>
+                <div class="alert alert-info">
+                    <h3>Nội dung tạo ra:</h3>
+                    <p>{{ is_array($content) ? $content['text'] : $content }}</p>
 
-            <form action="{{ route('postToFacebook') }}" method="POST">
-                @csrf
-                <div class="mb-3">
-                    <label for="page_id" class="form-label">Page ID Facebook</label>
-                    <input type="text" name="page_id" id="page_id" class="form-control" value="{{ old('page_id') }}">
+@if(is_array($content) && isset($content['image_url']))
+    <h4>Hình ảnh minh họa:</h4>
+    <img src="{{ $content['image_url'] }}" alt="Hình ảnh minh họa" class="img-fluid">
+@endif
+
                 </div>
-                <input type="hidden" name="content" value="{{ $content }}">
-                <button type="submit" class="btn btn-success">Đăng lên Facebook</button>
-            </form>
-            
-        @else
+
+                <form action="{{ route('postToFacebook') }}" method="POST">
+                    @csrf
+                    <div class="mb-3">
+                        <label for="page_id" class="form-label">Page ID Facebook</label>
+                        <input type="text" name="page_id" id="page_id" class="form-control" value="{{ old('page_id') }}">
+                    </div>
+                    <input type="hidden" name="content" value="{{ is_array($content) ? $content['text'] : $content }}">
+
+                    <button type="submit" class="btn btn-success">Đăng lên Facebook</button>
+                </form>
+            @else
         <form action="{{ route('generateContent') }}" method="POST">
             @csrf
             <div class="mb-3">
