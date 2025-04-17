@@ -31,7 +31,7 @@ class FacebookInsightsController extends Controller
             $response = $client->get("https://graph.facebook.com/v22.0/{$pageId}/posts", [
                 'query' => [
                     'access_token' => $accessToken,
-                    'fields' => 'id,message,created_time,reactions.summary(true),comments.summary(true)',
+                    'fields' => 'id,message,full_picture,image,created_time,reactions.summary(true),comments.summary(true)',
                     'limit' => 10
                 ]
             ]);

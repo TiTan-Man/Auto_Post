@@ -10,7 +10,10 @@ class Scenario extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'status', 'scheduled_at'];
+    protected $fillable = ['name', 'description', 'status'];
 
-
+    public function contents()
+    {
+        return $this->hasMany(Content::class);
+    }
 }
