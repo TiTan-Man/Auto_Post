@@ -18,6 +18,14 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <p><strong>Nội dung:</strong> {{ $post['message'] ?? '[Không có nội dung]' }}</p>
+                    <p>
+                        @if (!empty($post['full_picture']))
+                            <img src="{{ $post['full_picture'] }}" alt="Post Image" style="max-width:100px; max-height:100px;" class="img-thumbnail">
+                        @else
+                            -
+                        @endif
+                    </p>
+
                     <p><strong>Ngày đăng:</strong> {{ $post['created_time'] }}</p>
                     <p><strong>Tổng cảm xúc:</strong> {{ $post['reactions']['summary']['total_count'] ?? 0 }}</p>
                     <p><strong>Bình luận:</strong> {{ $post['comments']['summary']['total_count'] ?? 0 }}</p>

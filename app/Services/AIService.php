@@ -48,11 +48,11 @@ class AIService
     {
         // Chuyển dữ liệu insights sang chuỗi JSON được định dạng đẹp
         $insightsJson = json_encode($insights, JSON_PRETTY_PRINT);
-
+        // dd($insightsJson);
         // Tạo prompt dựa trên dữ liệu insights
-        $prompt = "Dưới đây là dữ liệu Facebook Insights về các bài viết của trang:\n\n{$insightsJson}\n\n";
+        $prompt = "Dưới đây là dữ liệu Facebook Insights đã được chuyển về dạng json về các bài viết của trang:\n\n{$insightsJson}, biên dịch lại chúng để bạn hiểu và: \n\n";
         if ($topic) {
-            $prompt .= "Dựa trên dữ liệu trên, hãy tạo ra một chiến lược marketing toàn diện và xuất sắc cho việc tiếp thị sản phẩm/dịch vụ thuộc lĩnh vực \"{$topic}\". Chiến lược cần bao gồm phân tích thị trường, đối tượng mục tiêu, kênh truyền thông, nội dung quảng cáo và cách đo lường hiệu quả.";
+            $prompt .= "Dựa trên dữ liệu trên, hãy tạo ra một chiến lược marketing toàn diện và xuất sắc cho việc tiếp thị sản phẩm/dịch vụ thuộc lĩnh vực \"{$topic}\". Chiến lược cần bao gồm phân tích thị trường, đối tượng mục tiêu, kênh truyền thông, nội dung quảng cáo và cách đo lường hiệu quả., nếu có nhiều loại mặt hàng trong phần dữ liệu tôi gửi lên thì chiến lược đưa ra phải chi tiết gắn với số liệu của từng mặt hàng để tôi có thể nắm bắt 1 cách chi tiết, tốt nhất là chiến lược cụ thể theo tuần";
         } else {
             $prompt .= "Dựa trên dữ liệu trên, hãy tạo ra một chiến lược marketing toàn diện và xuất sắc cho trang này. Chiến lược cần bao gồm phân tích thị trường, đối tượng mục tiêu, kênh truyền thông, nội dung quảng cáo và cách đo lường hiệu quả.";
         }
@@ -69,7 +69,7 @@ class AIService
                         ['role' => 'system', 'content' => 'You are a seasoned marketing strategist.'],
                         ['role' => 'user', 'content' => $prompt],
                     ],
-                    'max_tokens' => 1000,
+                    'max_tokens' => 1500,
                 ]
             ]);
 
@@ -99,4 +99,23 @@ class AIService
             return 'Đã xảy ra lỗi khi đăng bài lên Facebook.'. $e->getMessage();
         }
     }
+    public function postToFacebookWithImage(string $pageId, string $message, string $imagePath)
+{
+    $url = "https://graph.facebook.com/{$pageId}/photos";
+
+    try {
+        $response = $this->client->post($url, [
+            'form_params' => [
+                'caption' => $message,
+                'access_token' => $this->fbAccessToken,
+                'url' => $imagePath, // URL của ảnh (hoặc đường dẫn ảnh đã upload)
+            ]
+        ]);
+        $result = json_decode($response->getBody(), true);
+        return $result;
+    } catch (\Exception $e) {
+        Log::error('Lỗi khi đăng bài kèm ảnh lên Facebook: ' . $e->getMessage());
+        return 'Đã xảy ra lỗi khi đăng bài kèm ảnh lên Facebook.' . $e->getMessage();
+    }
+}
 }

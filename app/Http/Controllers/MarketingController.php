@@ -30,7 +30,29 @@ class MarketingController extends Controller
 
         return view('marketing.index', compact('content', 'topic'));
     }
+    public function generateContentWithImage(Request $request)
+{
+    $request->validate([
+        'topic' => 'required|string|max:255',
+        'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Kiểm tra file ảnh
+        'page_id' => 'required|string', // ID của trang Facebook
+    ]);
 
+    $topic = $request->input('topic');
+    $pageId = $request->input('page_id');
+
+    // Lưu ảnh vào thư mục tạm thời
+    $imagePath = $request->file('image')->store('uploads', 'public');
+
+    // Tạo nội dung từ AI
+    $content = $this->aiService->generateContent($topic);
+
+    // Đăng bài lên Facebook kèm ảnh
+    $imageUrl = asset('storage/' . $imagePath); // URL công khai của ảnh
+    $result = $this->aiService->postToFacebookWithImage($pageId, $content, $imageUrl);
+
+    return view('marketing.index', compact('content', 'result', 'imageUrl', 'topic'));
+}
     public function postToFacebook(Request $request)
     {
         $request->validate([

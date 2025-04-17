@@ -36,7 +36,22 @@
         </form>
         
         @endif
-
+        <form action="{{ route('marketing.generateWithImage') }}" method="POST" enctype="multipart/form-data" class="mb-4">
+            @csrf
+            <div class="form-group">
+                <label for="topic">Chủ đề:</label>
+                <input type="text" class="form-control" id="topic" name="topic" placeholder="Nhập chủ đề" required>
+            </div>
+            <div class="form-group">
+                <label for="image">Chọn Ảnh:</label>
+                <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+            </div>
+            <div class="form-group">
+                <label for="page_id">Page ID:</label>
+                <input type="text" class="form-control" id="page_id" name="page_id" placeholder="Nhập Page ID" required>
+            </div>
+            <button type="submit" class="btn btn-primary mt-2">Tạo và Đăng Bài</button>
+        </form>
         @if(isset($result))
             <hr>
             <h3>Kết quả đăng bài lên Facebook</h3>
