@@ -129,4 +129,21 @@ class AIService
             return 'Đã xảy ra lỗi khi đăng bài kèm ảnh lên Facebook.' . $e->getMessage();
         }
     }
+    public function updateFacebookPost(string $postId, string $newMessage)
+    {
+        $url = "https://graph.facebook.com/{$postId}";
+
+        try {
+            $response = $this->client->post($url, [
+                'form_params' => [
+                    'message' => $newMessage,
+                    'access_token' => $this->fbAccessToken,
+                ]
+            ]);
+            return json_decode($response->getBody(), true);
+        } catch (\Exception $e) {
+            Log::error("Lỗi khi cập nhật bài viết Facebook: " . $e->getMessage());
+            return null;
+        }
+    }
 }

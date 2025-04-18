@@ -5,12 +5,22 @@ use App\Models\Content;
 use Illuminate\Http\Request;
 use App\Models\Scenario;
 use Illuminate\Support\Facades\Storage;
+use App\Services\AIService;
+use Illuminate\Support\Facades\Log;
 
 class ContentController extends Controller
 {
+    protected $aiService;
+
+    public function __construct(AIService $aiService)
+    {
+        $this->aiService = $aiService;
+    }
     public function index()
     {
-        $contents = Content::with('scenario')->get(); // Lấy danh sách nội dung kèm Scenario
+        // Lấy danh sách nội dung với phân trang (10 bài viết mỗi trang)
+        $contents = Content::with('scenario')->paginate(10);
+    
         return view('contents.index', compact('contents'));
     }
 
@@ -18,7 +28,28 @@ class ContentController extends Controller
     {
         $content = Content::findOrFail($id);
         $scenarios = Scenario::all(); // Lấy danh sách tất cả Scenario
-        return view('contents.edit', compact('content', 'scenarios'));
+    
+        // Lấy tên Page từ Facebook Graph API
+        $pageName = null;
+        if ($content->page_id) {
+            $accessToken = env('FACEBOOK_ACCESS_TOKEN');
+            $client = new \GuzzleHttp\Client();
+    
+            try {
+                $response = $client->get("https://graph.facebook.com/v12.0/{$content->page_id}", [
+                    'query' => [
+                        'access_token' => $accessToken,
+                        'fields' => 'name',
+                    ],
+                ]);
+                $pageData = json_decode($response->getBody(), true);
+                $pageName = $pageData['name'] ?? null;
+            } catch (\Exception $e) {
+                Log::error('Lỗi khi lấy tên Page: ' . $e->getMessage());
+            }
+        }
+    
+        return view('contents.edit', compact('content', 'scenarios', 'pageName'));
     }
 
     public function update(Request $request, $id)
@@ -30,32 +61,24 @@ class ContentController extends Controller
         ]);
         
         $content = Content::findOrFail($id);
-        
-        // Xử lý upload ảnh mới
-        if ($request->hasFile('image')) {
-            // Xóa ảnh cũ nếu có
-            if ($content->image_url && file_exists(public_path($content->image_url))) {
-                unlink(public_path($content->image_url));
-            }
-            
-            // Tạo tên file mới
-            $imageName = time() . '.' . $request->file('image')->extension();
-            // Lưu ảnh vào thư mục public/uploads
-            $request->file('image')->move(public_path('uploads'), $imageName);
-            // Lưu đường dẫn vào database
-            $content->image_url = 'uploads/' . $imageName;
-        }
-        
-        // Cập nhật các trường khác
+    
+    
+        // Cập nhật nội dung
         $content->scenario_id = $request->input('scenario_id');
         $content->text_content = $request->input('text_content');
-        
-        // Lưu thay đổi và ghi log
+    
         $saved = $content->save();
-        \Log::info('Cập nhật content ID: ' . $id . ', Kết quả: ' . ($saved ? 'Thành công' : 'Thất bại'));
-        \Log::info('Đường dẫn ảnh sau cập nhật: ' . $content->image_url);
-        
-        return redirect()->route('contents.index')->with('success', 'Nội dung đã được cập nhật thành công.');
+    
+        // 👉 Cập nhật bài viết Facebook (nếu có facebook_post_id)
+        if ($content->facebook_post_id) {
+            $result = $this->aiService->updateFacebookPost(
+                $content->facebook_post_id,
+                $content->text_content
+            );
+            Log::info('Đã cập nhật bài viết Facebook:', $result ?? []);
+        }
+    
+        return redirect()->route('contents.index')->with('success', 'Nội dung đã được cập nhật và đồng bộ với Facebook.');
     }
 
     public function destroy($id)

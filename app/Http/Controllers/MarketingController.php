@@ -63,27 +63,27 @@ class MarketingController extends Controller
         $pageId = $request->input('page_id');
         
         // Xử lý file ảnh đã upload
-        $imagePath = $request->file('image')->getPathname();
-        
-        // Tạo nội dung từ AI
-        $content = $this->aiService->generateContent($description);
-        
-        // Nếu bạn muốn lưu ảnh vào máy chủ
         $imageName = time() . '.' . $request->file('image')->extension();
         $request->file('image')->move(public_path('uploads'), $imageName);
         $savedImagePath = public_path('uploads/' . $imageName);
         
-        // Lưu nội dung vào bảng contents
-        Content::create([
-            'scenario_id' => $scenario->id,
-            'text_content' => is_array($content) ? $content['text'] : $content,
-            'image_url' => asset('uploads/' . $imageName), // Lưu đường dẫn của ảnh đã lưu
-        ]);
-        $scenarios = Scenario::all();
+        // Tạo nội dung từ AI
+        $content = $this->aiService->generateContent($description);
         
         // Đăng bài lên Facebook kèm ảnh
         $result = $this->aiService->postToFacebookWithImage($pageId, $content, $savedImagePath);
         
+        // Lưu nội dung vào bảng contents và lưu page_id vào CSDL
+        Content::create([
+            'scenario_id' => $scenario->id,
+            'text_content' => is_array($content) ? $content['text'] : $content,
+            'image_url' => asset('uploads/' . $imageName), // Lưu đường dẫn của ảnh đã lưu
+            'facebook_post_id' => $result['post_id'] ?? null,
+            'page_id' => $pageId, // Lưu page_id vào CSDL
+        ]);
+    
+        $scenarios = Scenario::all();
+    
         return view('marketing.index', compact('content', 'result', 'savedImagePath', 'description', 'scenarios'));
     }
 

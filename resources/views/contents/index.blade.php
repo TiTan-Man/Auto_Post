@@ -38,6 +38,11 @@
                 @endforeach
             </tbody>
         </table>
+
+        <!-- Hiển thị phân trang -->
+        <div class="d-flex justify-content-center">
+            {{ $contents->links('pagination::bootstrap-4') }}
+        </div>
     </div>
 </body>
 </html>

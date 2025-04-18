@@ -9,7 +9,7 @@ class Content extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['scenario_id', 'text_content', 'image_url'];
+    protected $fillable = ['scenario_id', 'text_content', 'image_url','facebook_post_id','page_id'];
 
     public function scenario()
     {

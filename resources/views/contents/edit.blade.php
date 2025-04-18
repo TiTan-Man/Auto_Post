@@ -8,7 +8,7 @@
 <body>
     <div class="container mt-5">
         <h1>Sửa Nội dung</h1>
-        <form action="{{ route('contents.update', $content->id) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('contents.update', $content->id) }}" method="POST">
             @csrf
             @method('PUT')
 
@@ -31,18 +31,23 @@
                 <textarea name="text_content" id="text_content" class="form-control" rows="5">{{ $content->text_content }}</textarea>
             </div>
 
-            <!-- Input chỉnh sửa ảnh -->
+            <!-- Hiển thị tên Page -->
+            <div class="mb-3 d-flex align-items-center">
+                <label class="form-label me-2">Tên Page:</label>
+                <p class="form-control-plaintext mb-0">
+                    {{ $pageName ?? 'Không có thông tin Page' }}
+                </p>
+            </div>
+
+            <!-- Hiển thị hình ảnh hiện tại -->
             <div class="mb-3">
-                <label for="image" class="form-label">Ảnh</label>
-                <input type="file" name="image" id="image" class="form-control">
+                <label class="form-label">Ảnh hiện tại</label>
                 @if($content->image_url)
-                    <div class="mt-2">
-                        <p>Ảnh hiện tại:</p>
-                        <div class="border p-2 mb-2">
-                            <!-- Đường dẫn đến thư mục public/uploads -->
-                            <img src="{{ asset($content->image_url) }}?t={{ time() }}" alt="Ảnh hiện tại" class="img-fluid" style="max-height: 200px;">
-                        </div>
+                    <div class="border p-2 mb-2">
+                        <img src="{{ asset($content->image_url) }}?t={{ time() }}" alt="Ảnh hiện tại" class="img-fluid" style="max-height: 200px;">
                     </div>
+                @else
+                    <p class="text-muted">Không có ảnh</p>
                 @endif
             </div>
 

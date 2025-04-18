@@ -29,17 +29,23 @@
                     <p><strong>Ngày đăng:</strong> {{ $post['created_time'] }}</p>
                     <p><strong>Tổng cảm xúc:</strong> {{ $post['reactions']['summary']['total_count'] ?? 0 }}</p>
                     <p><strong>Bình luận:</strong> {{ $post['comments']['summary']['total_count'] ?? 0 }}</p>
-                    @if(isset($post['reaction_types']))
-                        <p><strong>Chi tiết cảm xúc:</strong></p>
-                        <ul>
-                            @foreach($post['reaction_types'] as $type => $count)
-                                <li>{{ ucfirst(strtolower($type)) }}: {{ $count }}</li>
-                            @endforeach
-                        </ul>
-                    @endif
+                    
+                    @if (!empty($post['comments_detail']))
+    <ul>
+        @foreach ($post['comments_detail'] as $comment)
+            <li>
+                <strong>{{ $comment['from']['name'] ?? 'Ẩn danh' }}:</strong>
+                {{ $comment['message'] ?? '[Không có nội dung]' }}
+            </li>
+        @endforeach
+    </ul>
+@else
+    <span>-</span>
+@endif
                 </div>
             </div>
         @endforeach
+
 
         <!-- Form chuyển sang tạo chiến lược marketing -->
         <h4 class="mt-4">Tạo Chiến Lược Marketing Dựa Trên Dữ Liệu Insights</h4>
